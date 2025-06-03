@@ -51,8 +51,9 @@ struct FetchedPokemon: Decodable {
         self.id = try container.decode(Int16.self, forKey: .id)
         self.name = try container.decode(String.self, forKey: .name)
         
-        var decodeTypes = [String]()
+        var decodeTypes: [String] = []
         var typesContainer = try container.nestedUnkeyedContainer(forKey: .types)
+        
         while !typesContainer.isAtEnd {
             let typeDictionaryContainer = try typesContainer.nestedContainer(keyedBy: CodingKeys.TypeDictionaryKeys.self)
             let typeContainer = try typeDictionaryContainer.nestedContainer(keyedBy: CodingKeys.TypeDictionaryKeys.TypeKeys.self,
