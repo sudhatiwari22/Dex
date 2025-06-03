@@ -47,16 +47,42 @@ struct FetchedPokemon: Decodable {
     
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        
         self.id = try container.decode(Int16.self, forKey: .id)
         self.name = try container.decode(String.self, forKey: .name)
-        self.types = try container.decode([String].self, forKey: .types)
-        self.hp = try container.decode(Int16.self, forKey: .hp)
-        self.attack = try container.decode(Int16.self, forKey: .attack)
-        self.defense = try container.decode(Int16.self, forKey: .defense)
-        self.specialAttack = try container.decode(Int16.self, forKey: .specialAttack)
-        self.specialDefense = try container.decode(Int16.self, forKey: .specialDefense)
-        self.speed = try container.decode(Int16.self, forKey: .speed)
-        self.sprite = try container.decode(URL.self, forKey: .sprite)
-        self.shiny = try container.decode(URL.self, forKey: .shiny)
+        
+        var decodeTypes = [String]()
+        var typesContainer = try container.nestedUnkeyedContainer(forKey: .types)
+        while !typesContainer.isAtEnd {
+            let typeDictionaryContainer = try typesContainer.nestedContainer(keyedBy: CodingKeys.TypeDictionaryKeys.self)
+            let typeContainer = try typeDictionaryContainer.nestedContainer(keyedBy: CodingKeys.TypeDictionaryKeys.TypeKeys.self,
+                                                                            forKey: .type)
+            
+            let type = try typeContainer.decode(String.self, forKey: .name)
+            decodeTypes.append(type)
+            
+        }
+        self.types = decodeTypes
+        
+        
+        var decodeStats: [Int16] = []
+        var statsContainer = try container.nestedUnkeyedContainer(forKey: .stats)
+        while !statsContainer.isAtEnd {
+            let statsDictionaryContainer = try statsContainer.nestedContainer(keyedBy: CodingKeys.StatsDictionaryKeys.self)
+            
+            let stat = try statsDictionaryContainer.decode(Int16.self, forKey: .baseStat)
+            decodeStats.append(stat)
+        }
+        
+        self.hp = decodeStats[0]
+        self.attack = decodeStats[1]
+        self.defense = decodeStats[2]
+        self.specialAttack = decodeStats[3]
+        self.specialDefense = decodeStats[4]
+        self.speed = decodeStats[5]
+        
+        let spriteContainer = try container.nestedContainer(keyedBy: CodingKeys.SpriteKeys.self, forKey: .sprites)
+        self.sprite = try spriteContainer.decode(URL.self, forKey: .sprite)
+        self.shiny = try spriteContainer.decode(URL.self, forKey: .shiny)
     }
 }
