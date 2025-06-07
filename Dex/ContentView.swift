@@ -15,6 +15,8 @@ struct ContentView: View {
         sortDescriptors: [SortDescriptor(\.id)],
         animation: .default) private var pokedex
     
+    @FetchRequest<Pokemon>(sortDescriptors: []) private var all
+    
     @State private var searchText = ""
     @State private var filterByFavorites = false
     
@@ -39,7 +41,7 @@ struct ContentView: View {
     let fetchService = FetchService()
 
     var body: some View {
-        if pokedex.isEmpty {
+        if all.isEmpty {
             ContentUnavailableView {
                 Label("No Pokemon", image: .nopokemon)
             } description: {
@@ -92,16 +94,28 @@ struct ContentView: View {
                                     }
                                 }
                             }
+                            .swipeActions(edge: .leading) {
+                                Button(pokemon.favorite ? "Remove from favorites" : "Add to favorites", systemImage: "star") {
+                                    pokemon.favorite.toggle()
+                                    
+                                    do {
+                                        try viewContext.save()
+                                    } catch {
+                                        print(error)
+                                    }
+                                }
+                                .tint(pokemon.favorite ? .gray : .yellow)
+                            }
                         }
                     } footer : {
-                        if pokedex.count < 151 {
+                        if all.count < 151 {
                             ContentUnavailableView {
                                 Label("Missing Pokemon", image: .nopokemon)
                             } description: {
                                 Text("The fetch was intruppted.\nFetch the rest of the Pokemon")
                             } actions: {
                                 Button("Fetch Pokemon", systemImage: "antenna.radiowaves.left.and.right") {
-                                    getPokemon(from: pokedex.count + 1)
+                                    getPokemon(from: all.count + 1)
                                 }
                                 .buttonStyle(.borderedProminent)
                             }
