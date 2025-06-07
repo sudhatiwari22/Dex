@@ -15,7 +15,8 @@ struct ContentView: View {
         sortDescriptors: [SortDescriptor(\.id)],
         animation: .default) private var pokedex
     
-    @State var searchText = ""
+    @State private var searchText = ""
+    @State private var filterByFavorites = false
     
     private var dynamicPredicate: NSPredicate {
         var predicates: [NSPredicate] = []
@@ -26,6 +27,9 @@ struct ContentView: View {
         }
         
         // filter by favorites
+        if filterByFavorites {
+            predicates.append(NSPredicate(format: "favorite == %d", true))
+        }
         
         // combine all predicates
         
@@ -50,8 +54,15 @@ struct ContentView: View {
                         .frame(width: 100, height: 100)
 
                         VStack(alignment: .leading) {
-                            Text(pokemon.name!.capitalized)
-                                .fontWeight(.bold)
+                            HStack {
+                                Text(pokemon.name!.capitalized)
+                                    .fontWeight(.bold)
+                                
+                                if pokemon.favorite == true {
+                                    Image(systemName: "star.fill")
+                                        .foregroundStyle(.yellow)
+                                }
+                            }
                             
                             HStack {
                                 ForEach(pokemon.types!, id: \.self) { type in
@@ -75,12 +86,21 @@ struct ContentView: View {
             .onChange(of: searchText, {
                 pokedex.nsPredicate = dynamicPredicate
             })
+            .onChange(of: filterByFavorites, {
+                pokedex.nsPredicate = dynamicPredicate
+            })
             .navigationDestination(for: Pokemon.self ) { pokemon in
                 Text(pokemon.name ?? "no name")
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
+                    Button {
+                        filterByFavorites.toggle()
+                    } label: {
+                        Label("Filter by favorites",
+                              systemImage: filterByFavorites ? "star.fill" : "star")
+                    }
+                    .tint(.yellow)
                 }
                 ToolbarItem {
                     Button("Add Item", systemImage: "plus") {
