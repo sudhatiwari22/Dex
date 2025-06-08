@@ -5,57 +5,27 @@
 //  Created by Sudha Rani on 01/06/25.
 //
 
-import CoreData
+import SwiftData
+import Foundation
 
+@MainActor
 struct PersistenceController {
-    static let shared = PersistenceController()
 
     static var previewPokemon: Pokemon {
-        let context = PersistenceController.preview.container.viewContext
         
-        let fetchRequest: NSFetchRequest<Pokemon> = Pokemon.fetchRequest()
-        fetchRequest.fetchLimit = 1
-        let results = try! context.fetch(fetchRequest)
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let pokemonData = try! Data(contentsOf: Bundle.main.url(forResource: "samplepokemon", withExtension: ".json")!)
         
-        return results.first!
+        let pokemon = try! decoder.decode(Pokemon.self, from: pokemonData)
+        return pokemon
     }
     
-    static let preview: PersistenceController = {
-        let result = PersistenceController(inMemory: true)
-        let viewContext = result.container.viewContext
+    static let preview: ModelContainer = {
+        let container = try! ModelContainer(for: Pokemon.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        container.mainContext.insert(previewPokemon)
         
-        let newPokemon = Pokemon(context: viewContext)
-        newPokemon.id = 1
-        newPokemon.name = "bulbasaur"
-        newPokemon.types = ["grass", "poison"]
-        newPokemon.hp = 45
-        newPokemon.attack = 49
-        newPokemon.defense = 49
-        newPokemon.specialAttack = 65
-        newPokemon.specialDefense = 65
-        newPokemon.speed = 45
-        newPokemon.spriteURL = URL(string: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png")
-        newPokemon.shinyURL = URL(string: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/1.png")
-        
-        do {
-            try viewContext.save()
-        } catch {
-            print(error)
-        }
-        return result
+        return container
     }()
 
-    let container: NSPersistentContainer
-
-    init(inMemory: Bool = false) {
-        container = NSPersistentContainer(name: "Dex")
-        if inMemory {
-            container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
-        }
-        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
-            print(error)
-        })
-        container.viewContext.mergePolicy = NSMergePolicy.mergeByPropertyStoreTrump
-        container.viewContext.automaticallyMergesChangesFromParent = true
-    }
 }
