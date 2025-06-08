@@ -17,22 +17,19 @@ struct ContentView: View {
     @State private var searchText = ""
     @State private var filterByFavorites = false
     
-    private var dynamicPredicate: NSPredicate {
-        var predicates: [NSPredicate] = []
-        
-        // filter by search
-        if !searchText.isEmpty {
-            predicates.append(NSPredicate(format: "name contains[c] %@", searchText))
+    private var dynamicPredicate: Predicate<Pokemon> {
+        #Predicate<Pokemon> { pokemon in
+            if filterByFavorites && !searchText.isEmpty {
+                pokemon.favorite &&
+                pokemon.name.localizedStandardContains(searchText)
+            } else if (!searchText.isEmpty) {
+                pokemon.name.localizedStandardContains(searchText)
+            } else if (filterByFavorites) {
+                pokemon.favorite
+            } else {
+                true
+            }
         }
-        
-        // filter by favorites
-        if filterByFavorites {
-            predicates.append(NSPredicate(format: "favorite == %d", true))
-        }
-        
-        // combine all predicates
-        
-        return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
     }
     
     let fetchService = FetchService()
@@ -54,7 +51,7 @@ struct ContentView: View {
             NavigationStack {
                 List {
                     Section {
-                        ForEach(pokedex) { pokemon in
+                        ForEach(try? pokedex.filter(dynamicPredicate) ?? pokedex) { pokemon in
                             NavigationLink(value: pokemon) {
                                 if pokemon.sprite == nil {
                                     AsyncImage(url: pokemon.spriteURL) { image in
